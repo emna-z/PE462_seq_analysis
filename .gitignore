@@ -1,0 +1,8 @@
+.Rproj.user
+.Rhistory
+.RData
+.Ruserdata
+PE462_doc_files/
+*.html
+*.lock
+*.bib

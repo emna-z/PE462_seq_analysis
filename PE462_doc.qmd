@@ -1,0 +1,109 @@
+---
+title: "PE462 Repot"
+author: "E. Zeghal"
+date: "`r Sys.Date()`"
+format: 
+  html:
+    html-math-method: katex
+    toc: true
+    toc-location: left
+    toc-float: true
+    toc-depth: 5
+    code-fold: show
+theme:
+  light: flatly
+  dark: darkly
+execute:
+  warning: false
+editor: visual
+bibliography: references.bib
+---
+
+### Study context: {#sec-study-context}
+
+Our goal is the exploration of Illumina sequencing data (primers 515F-926R) . The amplified DNA was extracted from the surface of plastic films (polymers: PE, PET, PS and Nylon) incubated in 5L bottles of seawater collected from 2 different station (offshore vs coastal) in the North Sea.\
+The files used here are the resulting asv tables and taxonomy tables obtained via [CASCABEL](https://github.com/AlejandroAb/CASCABEL) (v4.6.2) [@abdalaasbun2020]. Raw sequencing data, original asv table and taxonomy table are accessible via \*\*\*\*\*\*\*\*.
+
+The following sections describe the different steps and codes used during the analysis.
+
+### 1. Data import and cleaning {#sec-1.-data-import-and-cleaning}
+
+#### Import data for phyloseq
+
+let's load the libraries needed for this section
+
+```{r}
+#| label: load packages
+#| results: hide
+#| warning: false	
+library("magrittr")
+library("tidyverse")
+library("phyloseq")
+library("mia")
+library("Hmisc")
+```
+
+```{r}
+#| label: import raw data
+#| results: hide
+
+tax1 <- read.delim("../both_lanes/asv/taxonomy_dada2/representative_seq_set_tax_assignments.txt",row.names = 1, na.strings = "NA")
+tax2 <- read.delim("../unpaired_PR2/asv/taxonomy_dada2/representative_seq_set_tax_assignments.txt",row.names = 1, na.strings = "NA")
+otu1 <- as.matrix(read.delim("../both_lanes/asv/asv_table.txt", row.names = 1))
+otu2 <- read.delim("../unpaired_PR2/asv/asv_table.txt", row.names = 1)
+map <- sample_data(read.csv("../mapfile_PE462_corrected_final.csv", row.names = 1, na.strings = c("NA", "")))
+```
+
+Now that our raw data is imported, we need to combine the Eukaryotes and Prokaryotes taxonomy tables to import as a phyloseq `tax_table()` object. this demands a few tweaks and re-formatting.
+
+```{r}
+#| label: combined phyloseq tax table
+#| results: hide
+
+# correct the ASV IDs sequentially 
+rownames(tax2) <- paste0("asv.",(length(rownames(tax1))+1):(length(rownames(tax1))+length(rownames(tax2))))
+
+# correct ranks in prokaryotes tax table
+ranks <- c ("Kingdom", "Phylum", "Class", "Order", "Family", "Genus", "Species")
+colnames(tax1) <-  ranks
+
+# for ease of handling we'll change the rank Division to Phylum for the Eukaryotes table
+colnames(tax2)[3] <- "Phylum"
+# and add a Supergroup column to the prokaryotes column by duplicating the kingdom column content
+tax1 <- tax1 %>% mutate(Supergroup = Kingdom)
+
+tax2 <- as.matrix(tax2)
+tax1 <- as.matrix(tax1)
+
+# combine into phyloseq tax_table()
+tax <- rbind(tax1,tax2) %>% tax_table()
+```
+
+Now, same thing for the Eukaryotes and Prokaryotes asv tables that will be imported as a phyloseq `otu_table()` object.
+
+```{r}
+#| label: combined phyloseq otu table
+#| results: hide
+
+# Rename ASV IDs
+rownames(otu2) <- rownames(tax2)
+
+# Samples "NIOZ186.245.238","NIOZ322.013.254","NIOZ322.203.188" and "NIOZ322.251.236" are missing in the euk asv table
+samples_missing <- setdiff(colnames(otu1),colnames(otu2))
+
+# add columns with zeros as asv count for the missing samples
+for (i in 1:length(samples_missing)) {otu2[samples_missing[i]] <- 0 }
+
+otu2 <- as.matrix (otu2)
+
+# combine into phyloseq otu_table()
+otu <-rbind(otu1,otu2) %>%  otu_table(taxa_are_rows = TRUE)
+```
+
+```{r}
+#| label: combined phyloseq object
+physeq_object <-  merge_phyloseq(otu, tax, map) 
+physeq_object
+```
+
+#### Data cleaning
