@@ -12,6 +12,7 @@ library("magrittr")
 library("tidyverse")
 library("phyloseq")
 library("mia")
+library("microbiome")
 library("Hmisc")
 
 # raw data import ---------------------------------------------------------
@@ -20,7 +21,7 @@ tax1 <- read.delim("../both_lanes/asv/taxonomy_dada2/representative_seq_set_tax_
                              row.names = 1, na.strings = "NA")
 tax2 <- read.delim("../unpaired_PR2/asv/taxonomy_dada2/representative_seq_set_tax_assignments.txt",
                    row.names = 1, na.strings = "NA")
-# tax2 <- tax2 %>% filter(!is.na(Kingdom) & Kingdom == "Eukaryota") #gets rid of "Eukaryota:plas", "Bacteria" and NA
+
 rownames(tax2) <- paste0("asv.",(length(rownames(tax1))+1):(length(rownames(tax1))+length(rownames(tax2))))
 
 # for ease of handling we'll change the rank Division to Phylum for the Eukaryotes table
@@ -42,3 +43,21 @@ otu2 <- as.matrix (otu2)
 otu <-rbind(otu1,otu2) %>%  otu_table(taxa_are_rows = TRUE)
 map <- sample_data(read.csv("../mapfile_PE462_corrected_final.csv", row.names = 1, na.strings = c("NA", "")))
 physeq_object <-  merge_phyloseq(otu, tax, map)            
+
+# data cleaning -----------------------------------------------------------
+summarize_phyloseq(physeq_object)
+
+# Delete poorly assigned ASVs
+get_taxa_unique(physeq_object, "Kingdom") 
+physeq_object <- subset_taxa(physeq_object, !is.na(Kingdom) & Kingdom %in% c("Bacteria", "Archaea", "Eukaryota"))
+
+# Delete chloroplast and Mitochodria
+any((get_taxa_unique(physeq_object, "Order") == "Chloroplast"))
+any((get_taxa_unique(physeq_object, "Family") == "Mitochondria"))
+physeq_object <- physeq_object %>% 
+  subset_taxa(!Order%in% c("Chloroplast")) %>%
+  subset_taxa(!Family%in% c("Mitochondria"))
+
+
+
+filter_taxa(GlobalPatterns, function(x) sum(x > 3) > (0.2*length(x)), TRUE)

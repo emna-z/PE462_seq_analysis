@@ -8,10 +8,13 @@ if (!require("BiocManager", quietly = TRUE))
 
 BiocManager::install("phyloseq")
 
-# mia ---------------------------------------------------------------------
+# miaverse ---------------------------------------------------------------------
 BiocManager::install("mia")
+BiocManager::install("microbiome")
 
 # Hmisc -------------------------------------------------------------------
 
 install.packages("Hmisc")
+
+
 

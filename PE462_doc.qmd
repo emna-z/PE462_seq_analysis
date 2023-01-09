@@ -54,7 +54,7 @@ otu2 <- read.delim("../unpaired_PR2/asv/asv_table.txt", row.names = 1)
 map <- sample_data(read.csv("../mapfile_PE462_corrected_final.csv", row.names = 1, na.strings = c("NA", "")))
 ```
 
-Now that our raw data is imported, we need to combine the Eukaryotes and Prokaryotes taxonomy tables to import as a phyloseq `tax_table()` object. this demands a few tweaks and re-formatting.
+Now that our raw data is imported, we need to combine the Eukaryotas and Prokaryotes taxonomy tables to import as a phyloseq `tax_table()` object. this demands a few tweaks and re-formatting.
 
 ```{r}
 #| label: combined phyloseq tax table
@@ -79,7 +79,7 @@ tax1 <- as.matrix(tax1)
 tax <- rbind(tax1,tax2) %>% tax_table()
 ```
 
-Now, same thing for the Eukaryotes and Prokaryotes asv tables that will be imported as a phyloseq `otu_table()` object.
+Now, same thing for the Eukaryotas and Prokaryotes asv tables that will be imported as a phyloseq `otu_table()` object.
 
 ```{r}
 #| label: combined phyloseq otu table
@@ -102,8 +102,47 @@ otu <-rbind(otu1,otu2) %>%  otu_table(taxa_are_rows = TRUE)
 
 ```{r}
 #| label: combined phyloseq object
+
 physeq_object <-  merge_phyloseq(otu, tax, map) 
 physeq_object
 ```
 
 #### Data cleaning
+
+The obtained data set still needs a bit of cleaning i.e. deleting singletons, deleting chloroplasts, eliminating poorly assigned ASVs, harmonize taxonomy, etc.
+
+```{r}
+#| label: cleaning_1
+#| results: hide
+
+# Delete poorly assigned ASVs
+get_taxa_unique(physeq_object, "Kingdom") 
+physeq_object <- subset_taxa(physeq_object, !is.na(Kingdom) & Kingdom %in% c("Bacteria", "Archaea", "Eukaryota"))
+
+# Unify all forms of 'unassigned'
+only_unassigned <- function(x) {
+  if_else(x %in% c("uncultured","Uncultured","metagenome","Metagenome","unknown","Unknown","NA"),"unassigned", x)
+  }
+
+taxo <- as.data.frame(physeq_object@tax_table)%>% 
+  replace(is.na(.),"unassigned") %>% 
+  mutate( across(.cols = everything(), ~only_unassigned(.)))
+
+taxo <- tax_table(as.matrix(taxo))
+
+physeq_object <- merge_phyloseq(physeq_object@otu_table, taxo, map)
+
+# Delete chloroplast and Mitochodria
+any((get_taxa_unique(physeq_object, "Order") == "Chloroplast"))
+any((get_taxa_unique(physeq_object, "Family") == "Mitochondria"))
+physeq_object <- physeq_object %>% 
+  subset_taxa(!Order%in% c("Chloroplast")) %>%
+  subset_taxa(!Family%in% c("Mitochondria"))
+```
+
+Before continuing with the pre-processing, let's calculate the 𝝰 diversity indexes. Some of these are sensitive to the presence of singletons.
+
+```{r}
+#| label: alpha diversity indexes
+#| results: hide
+```
