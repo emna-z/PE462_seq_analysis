@@ -69,14 +69,20 @@ colnames(tax1) <-  ranks
 
 # for ease of handling we'll change the rank Division to Phylum for the Eukaryotes table
 colnames(tax2)[3] <- "Phylum"
+
+tax2 <- tax2 %>% 
+  mutate( across(.cols = everything(), ~str_replace_all(.,c("XXX"="","XX"="","_X"= "", "_" = " "))))
 # and add a Supergroup column to the prokaryotes column by duplicating the kingdom column content
-tax1 <- tax1 %>% mutate(Supergroup = Kingdom)
+tax1 <- tax1 %>% mutate(Supergroup = Kingdom, .after = Kingdom)
 
 tax2 <- as.matrix(tax2)
 tax1 <- as.matrix(tax1)
 
 # combine into phyloseq tax_table()
-tax <- rbind(tax1,tax2) %>% tax_table()
+tax <- rbind(tax1,tax2) %>%
+  mutate(across(.cols = everything(), ~str_squish(.))) %>%
+  as.matrix() %>% 
+  tax_table()
 ```
 
 Now, same thing for the Eukaryotas and Prokaryotes asv tables that will be imported as a phyloseq `otu_table()` object.
@@ -97,7 +103,7 @@ for (i in 1:length(samples_missing)) {otu2[samples_missing[i]] <- 0 }
 otu2 <- as.matrix (otu2)
 
 # combine into phyloseq otu_table()
-otu <-rbind(otu1,otu2) %>%  otu_table(taxa_are_rows = TRUE)
+otu <- rbind(otu1,otu2) %>%  otu_table(taxa_are_rows = TRUE)
 ```
 
 ```{r}
@@ -107,7 +113,7 @@ physeq_object <-  merge_phyloseq(otu, tax, map)
 physeq_object
 ```
 
-#### Data cleaning
+#### Data cleaning and alpha diversity
 
 The obtained data set still needs a bit of cleaning i.e. deleting singletons, deleting chloroplasts, eliminating poorly assigned ASVs, harmonize taxonomy, etc.
 
@@ -144,5 +150,117 @@ Before continuing with the pre-processing, let's calculate the 𝝰 diversity in
 
 ```{r}
 #| label: alpha diversity indexes
-#| results: hide
+
+a_div <- phyloseq::estimate_richness(physeq_object)
+print(a_div)
+```
+
+Now we can proceed with the rest of the pre-processing.
+
+```{r}
+#| label: cleaning_2
+
+# keep asv with abundance higher than 2 in at least 3 samples
+# Filter out timepoint 15 (incomplete)
+# Filter out 92 asv with "unassigned" as phylum
+
+physeq <- physeq_object %>% 
+  filter_taxa( function(x) sum(x > 2) >= 3, TRUE) %>% 
+  subset_samples(timepoint_days %nin% c("15")) %>% 
+  subset_taxa(!Phylum == "unassigned")
+
+physeq
+```
+
+Now that the overall data set is "clean", we will produce a tidy table.
+
+```{r}
+#| label: Tidy physeq
+
+source("./tidy_psmelt.R")
+tidy_physeq_asv <- tidy_psmelt(physeq)
+
+tidy_physeq_asv$Species <- if_else(
+    (!tidy_physeq_asv$Genus=="unassigned"&!tidy_physeq_asv$Species=="unassigned"),
+    str_c(tidy_physeq_asv$Genus," ",tidy_physeq_asv$Species),
+    str_c(tidy_physeq_asv$Genus," sp."))
+
+  tidy_physeq_asv$detail <-if_else(
+  tidy_physeq_asv$material=="wood", 
+  str_c(tidy_physeq_asv$material,"_",tidy_physeq_asv$station,"_",tidy_physeq_asv$timepoint_days), 
+tidy_physeq_asv$detail)
+
+tidy_physeq_asv$polymer <- if_else(tidy_physeq_asv$material=="wood", 
+                                   str_c(tidy_physeq_asv$material), 
+                                   tidy_physeq_asv$polymer)
+tidy_physeq_asv$replicate <- NULL
+
+```
+
+```{r}
+#| label: Relative abundances calculations
+
+t3 <- tidy_physeq_asv  %>% group_by(Sample) %>% mutate(Sample_rel_abund = Abundance / sum(Abundance)) %>% #relative abundance of each otu per sample
+  ungroup() %>%
+  group_by(detail) %>% mutate( rep_rel_abund = Sample_rel_abund / sum(Sample_rel_abund)) %>% #relative abundance of each otu per number of samples in replicates
+  ungroup() %>% 
+  #Kingdom_section
+  group_by(Sample, Kingdom) %>% 
+  mutate(Kingdom_rel_abund_Sample = sum(Sample_rel_abund)) %>%  #Kingdom relative abundance per sample 
+  ungroup() %>% 
+  group_by(detail, Kingdom) %>% 
+  mutate(Kingdom_st_dev_abund_samples = sd(Kingdom_rel_abund_Sample)) %>% # standard dev of Kingdom relative abundances between replicates of detail (ployner_timepoint_days_treatment)
+  mutate(Kingdom_rep_rel_abund = sum(rep_rel_abund)) %>% #Kingdom relative abundance per samples of desc 
+  ungroup() %>%
+  #Phylum_section
+  group_by(Sample, Phylum) %>% 
+  mutate(Phylum_rel_abund_Sample = sum(Sample_rel_abund)) %>%
+  ungroup() %>% 
+  group_by(detail, Phylum) %>% 
+  mutate(st_dev_Phylum_abund = sd(Phylum_rel_abund_Sample)) %>%
+  mutate(Phyla_rep_rel_abund = sum(rep_rel_abund)) %>%
+  ungroup() %>% 
+  #Class_section
+  group_by(Sample, Class) %>% 
+  mutate(Class_rel_abund_Sample = sum(Sample_rel_abund)) %>%
+  ungroup() %>% 
+  group_by(detail, Class) %>% 
+  mutate(st_dev_Class_abund = sd(Class_rel_abund_Sample)) %>%
+  mutate(Class_rep_rel_abund = sum(rep_rel_abund)) %>%
+  ungroup() %>% 
+  #Order_section
+  group_by(Sample, Order) %>% 
+  mutate(Order_rel_abund_Sample = sum(Sample_rel_abund)) %>%
+  ungroup() %>% 
+  group_by(detail, Order) %>% 
+  mutate(st_dev_Order_abund = sd(Order_rel_abund_Sample)) %>%
+  mutate(Order_rep_rel_abund = sum(rep_rel_abund)) %>%
+  ungroup() %>% 
+  #Family_section
+  group_by(Sample, Family) %>% 
+  mutate(Family_rel_abund_Sample = sum(Sample_rel_abund)) %>%
+  ungroup() %>% 
+  group_by(detail, Family) %>% 
+  mutate(st_dev_Family_abund = sd(Family_rel_abund_Sample)) %>%
+  mutate(Family_rep_rel_abund = sum(rep_rel_abund)) %>%
+  ungroup() %>% 
+  #Genus_section
+  group_by(Sample, Genus) %>% 
+  mutate(Genus_rel_abund_Sample = sum(Sample_rel_abund)) %>%
+  ungroup() %>% 
+  group_by(detail, Genus) %>% 
+  mutate(st_dev_Genus_abund = sd(Genus_rel_abund_Sample)) %>%
+  mutate(Genus_rep_rel_abund = sum(rep_rel_abund)) %>%
+  ungroup() %>% 
+  #Species_section
+  group_by(Sample, Species) %>% 
+  mutate(Species_rel_abund_Sample = sum(Sample_rel_abund)) %>%
+  ungroup() %>% 
+  group_by(detail, Species) %>% 
+  mutate(st_dev_Species_abund = sd(Species_rel_abund_Sample)) %>%
+  mutate(Species_rep_rel_abund = sum(rep_rel_abund)) %>%
+  ungroup()  
+
+# write_csv(t3, "../tidyPE462_rel_abund_calc.csv")
+
 ```

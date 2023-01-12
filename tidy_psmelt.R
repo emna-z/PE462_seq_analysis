@@ -1,7 +1,7 @@
 tidy_psmelt <-
 function(physeq) {
   ### INSERT Initial variable and rank name checking and modding from `psmelt`
-  # Get the OTU table with taxa as rows
+  # Get the ASV table with taxa as rows
   rankNames = rank_names(physeq, FALSE)
   sampleVars = sample_variables(physeq, FALSE) 
   otutab <- otu_table(physeq)
@@ -11,8 +11,8 @@ function(physeq) {
   # Convert the otu table to a tibble in tidy form
   tb <- otutab %>% 
     as("matrix") %>%
-    tibble::as_tibble(rownames = "OTU") %>%
-    tidyr::gather("Sample", "Abundance", -OTU)
+    tibble::as_tibble(rownames = "ASV") %>%
+    tidyr::gather("Sample", "Abundance", -ASV)
   # Add the sample data if it exists
   if (!is.null(sampleVars)) {
     sam <- sample_data(physeq) %>%
@@ -25,9 +25,9 @@ function(physeq) {
   if (!is.null(rankNames)) {
     tax <- tax_table(physeq) %>%
       as("matrix") %>%
-      tibble::as_tibble(rownames = "OTU")
+      tibble::as_tibble(rownames = "ASV")
     tb <- tb %>%
-      dplyr::left_join(tax, by = "OTU")
+      dplyr::left_join(tax, by = "ASV")
   }
   tb %>%
     arrange(desc(Abundance))
