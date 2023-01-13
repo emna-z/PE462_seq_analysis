@@ -4,6 +4,5 @@
 .Ruserdata
 PE462_doc_files/
 *.html
-*.lock
 *.bib
 _extensions/

@@ -6,6 +6,33 @@ library("tidyverse")
 library("Hmisc")
 library("ggpubr")
 
+
+# palettes ----------------------------------------------------------------
+
+rcartocolor::carto_pal(12,"Safe")
+safe <- c ("#CC6677", "#DDCC77","#88CCEE" , "#117733", 
+                    "#332288", "#AA4499", "#44AA99", "#999933", 
+                    "#882255","#6699CC", "#661100", "#888888")
+# show_col(safe)
+
+light_poly <- c("#FD3216", "#00FE35", "#6A76FC", "#FED4C4", "#FE00CE", 
+                         "#0DF9FF", "#F6F926", "#FF9616", "#479B55", "#EEA6FB", "#DC587D", 
+                         "#D626FF", "#6E899C", "#00B5F7", "#B68E00", "#C9FBE5", "#FF0092", 
+                         "#22FFA7", "#E3EE9E", "#86CE00", "#BC7196", "#7E7DCD", "#FC6955", "#E48F72")
+                         
+colors_M2 <- c( "#3d405b","#ce796b", 
+                         "#25a18e", "#BC412B", "#95D9DA", "#B10F2E", "#0E273C",
+                         "#E3FDD8", "#353535", "#e7ad99", "#0F8B8D", "#7ae582",
+                         "#F2AF29",   "#94d2bd", "#606c38","#772e25",
+                         "#0047E0", "#344e41","#6c584c", "#5f0f40", "#D7F171", "#c89f9c" )
+# swatch(colors_M2)
+
+kelly1 <-  c("#be0032", "#f3c300",   "#875692",   "#f38400" ,  "#a1caf1" ,   "#c2b280" ,  
+                      "#848482" ,  "#008856"  , "#e68fac"  ,"#0067a5" ,  "#f99379"  ,
+                      "#604e97" ,  "#f6a600"  , "#b3446c"  , "#dcd300"  ,   "#25a18e" , 
+                      "#882d17" ,  "lightgrey", "#2b3d26", "#e25822"   , "#654522", "#8db600")
+                      
+
 # Kingdom -----------------------------------------------------------------
 
 k <- read_csv("../Kingdom_PE462.csv")
@@ -17,9 +44,10 @@ k <- k %>% filter(station %in% c("C05","C13")) %>%
   distinct() 
 k %>% head()
 
+# kingdoms RA barplot
 king_plot <- ggplot(k, aes(x=polymer_photo, y= Kingdom_rep_rel_abund, fill=Kingdom))+
   geom_bar(stat="identity", position="stack") +
-  scale_fill_manual(values=c("#DDCC77","#88CCEE","#CC6677"))+
+  scale_fill_manual(values=safe)+
   scale_y_continuous(labels=percent)+
   theme_minimal()+
   xlab("")+
@@ -49,22 +77,21 @@ p <- phyla %>% filter(station %in% c("C05","C13")) %>%
   mutate(Phylum, Phylum = if_else(Phyla_rep_rel_abund < 0.05, str_c("others <5%"), Phylum)) %>% 
   mutate(Phylum = fct_relevel(Phylum,"others <5%", after = Inf))
 
+# the multiple copies of phyla that are now labelled "others <5%" produce a distorted effect when plotting
+# to avoid that we'll sum the RA of all "others <5%" for each condition and replace the multiple 
+# entries by a single one
+
 psum <- p %>% filter(Phylum %in% "others <5%") %>%
   group_by(detail) %>%
   mutate(Phyla_rep_rel_abund = sum(Phyla_rep_rel_abund)) %>%
-  distinct()
+  distinct() #psum is the sum of RA of others <5% per condition
 
 p <- p %>% filter(Phylum %nin% "others <5%") %>%
-bind_rows(psum) %>%
-  mutate(Phylum = fct_relevel(Phylum,"others <5%", after = Inf))
+bind_rows(psum) %>% # the multiple others <5% are now replaced by a single one per condition
+  mutate(Phylum = fct_relevel(Phylum,"others <5%", after = Inf)) 
 
-rcartocolor::carto_pal(12,"Safe")
 
-safe <- c ("#CC6677", "#DDCC77","#88CCEE" , "#117733", 
-           "#332288", "#AA4499", "#44AA99", "#999933", 
-           "#882255","#6699CC", "#661100", "#888888")
-show_col(safe)
-
+# phylum RA barplot
 phyla_plot <- ggplot(p, aes(x=polymer_photo, y= Phyla_rep_rel_abund, fill=Phylum))+
   geom_bar(stat="identity", position="stack")+
   scale_fill_manual(values =  safe)+
@@ -84,8 +111,8 @@ phyla_plot <- ggplot(p, aes(x=polymer_photo, y= Phyla_rep_rel_abund, fill=Phylum
 
 # ggexport(ph,filename = "../phylum_rel_abund.pdf")
 
-# Orders ------------------------------------------------------------------
 
+# Orders ------------------------------------------------------------------
 
 or <- read_csv("../order_PE462.csv")
 o <- or %>% filter(station %in% c("C05","C13")) %>%
@@ -98,6 +125,10 @@ o <- or %>% filter(station %in% c("C05","C13")) %>%
   mutate(Order, Order = if_else(Order_rep_rel_abund < 0.05, str_c("unassigned or <5%"), Order)) %>% 
   mutate(Order, Order = if_else(Order == "unassigned", str_c("unassigned or <5%"), Order)) %>% 
   distinct()
+
+# Like phyla, the multiple copies of orders that are now labelled "unassigned or <5%" produce a 
+# distorted effect when plotting to avoid that we'll sum the RA of all "others <5%" for each 
+# condition and replace the multiple entries by a single one
   
 o5 <- o %>% filter(Order %in% "unassigned or <5%") %>%
   group_by(detail) %>% 
@@ -107,40 +138,11 @@ o5 <- o %>% filter(Order %in% "unassigned or <5%") %>%
 of <- o %>% filter(Order %nin% "unassigned or <5%") %>% 
   bind_rows(o5) %>% 
   mutate(Order = fct_relevel(Order,"unassigned or <5%", after = Inf)) %>% 
-  
   distinct()
 
-t5 <- o %>% filter(Order %in% c("Enterobacterales", "Campylobacterales")) %>% 
-  filter (station == "Coastal station") %>% 
-  group_by(timepoint_days, Order) %>% 
-  mutate(Order_time_rel_abund = mean(Order_rep_rel_abund)) %>% 
-  mutate(Order_time_stdv = sd(Order_rep_rel_abund))
-
-unique(o$Order)
-
-sky <- Polychrome::sky.colors()
-names(sky) <- NULL
-swatch(sky)
-
-polychrome_light <- light.colors()
-
-light <- c("#FD3216", "#00FE35", "#6A76FC", "#FED4C4", "#FE00CE", 
-"#0DF9FF", "#F6F926", "#FF9616", "#479B55", "#EEA6FB", "#DC587D", 
-"#D626FF", "#6E899C", "#00B5F7", "#B68E00", "#C9FBE5", "#FF0092", 
-"#22FFA7", "#E3EE9E", "#86CE00", "#BC7196", "#7E7DCD", "#FC6955", "#E48F72")
-
-light_l <- light[c()]
-swatch(light)
-
-colors_M2 <- c( "#3d405b","#ce796b", 
-                "#25a18e", "#BC412B", "#95D9DA", "#B10F2E", "#0E273C",
-                "#E3FDD8", "#353535", "#e7ad99", "#0F8B8D", "#7ae582",
-                "#F2AF29",   "#94d2bd", "#606c38","#772e25",
-                "#0047E0", "#344e41","#6c584c", "#5f0f40", "#D7F171", "#c89f9c" )
-swatch(colors_M2)
-
+# orders RA barplot
 p_o <- ggplot(of, aes(x=polymer_photo, y= Order_rep_rel_abund, fill=Order))+
-  geom_bar(stat="identity", position="stack")+ scale_fill_manual(values = light)+
+  geom_bar(stat="identity", position="stack")+ scale_fill_manual(values = kelly1)+
   scale_y_continuous(labels=percent)+
   theme_minimal()+ theme(axis.text.x = element_text(angle = 90, vjust = 0.5, hjust=1))+
   xlab("")+ylab("Relative Abundance")+
@@ -151,7 +153,7 @@ p_o <- ggplot(of, aes(x=polymer_photo, y= Order_rep_rel_abund, fill=Order))+
         legend.text = element_text(face = "bold"),
         axis.title.y = element_text(face = "bold"),
         axis.text.x = element_text(face = "bold"))
-p_o <- p_o + guides(fill=guide_legend(ncol =1))
+order_plot <- p_o + guides(fill=guide_legend(ncol =1))
 
-# ggpubr::ggexport(p_o, "../orders.pdf")
+# ggpubr::ggexport(order_plot, "../orders.pdf")
 

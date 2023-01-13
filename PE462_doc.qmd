@@ -9,7 +9,7 @@ format:
     toc-location: left
     toc-float: true
     toc-depth: 5
-    code-fold: show  
+    code-fold: true  
     highlight-style: a11y-dark
 theme:
   light: flatly
@@ -288,10 +288,74 @@ t3$pol_photo_station <-
 
 # write_csv(t3, "../tidyPE462_rel_abund_calc.csv")
 
-print(head(t3))
+
 
 ```
 
 ### Taxonomic ranks composition
 
-The tidy table generated in @sec-relative-abundances-calculations was used to generate tables with the corresponding abundances for each of the following ranks Kingdom, Phylum, Class, Order, Family, Genus and Species using
+The tidy table generated in @sec-relative-abundances-calculations was used to generate tables with the corresponding abundances for each of the following ranks Kingdom, Phylum, Class, Order, Family, Genus and Species using [2_split_by_ranks.R](https://github.com/emna-z/PE462_seq_analysis/blob/master/2_split_by_ranks.R).
+
+```{r}
+#| label: source barplots
+#| results: hide
+#| message: false
+
+# Script to generate plots
+source("./3_plots_div.R")
+
+```
+
+```{r}
+#| label: kingdom barplot
+#| echo: false
+
+king_plot 
+```
+
+```{r}
+#| label: phyla barplot
+#| echo: false
+
+phyla_plot 
+```
+
+```{r}
+#| label: order barplot
+#| echo: false
+
+order_plot
+```
+
+```{r}
+#| label: source alpha div plots
+#| results: hide
+#| message: false
+
+# Script to generate plots
+source("./4_alpha_div_plots.R")
+
+```
+
+```{r}
+#| label: shannon index plot
+#| echo: false
+
+shannon
+```
+
+```{r}
+#| label: simpson index plot
+#| echo: false
+
+simpson 
+```
+
+### session info
+
+```{r}
+#| label: session info
+#| echo: false
+
+sessionInfo()
+```
