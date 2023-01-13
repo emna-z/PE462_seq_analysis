@@ -184,4 +184,28 @@ t3 <- tidy_physeq_asv  %>% group_by(Sample) %>% mutate(Sample_rel_abund = Abunda
   mutate(Species_rep_rel_abund = sum(rep_rel_abund)) %>%
   ungroup()  
 
+
+# Final Tidy Table --------------------------------------------------------
+
+polymer_station <-  str_c(t3$polymer, "_", t3$station)
+polymer_photo <- str_c(t3$polymer, "_", t3$treatment)
+pol_photo_station <- str_c(t3$polymer, "_", t3$treatment, "_", t3$station)
+t3 <- t3 %>% 
+  add_column(polymer_station, .before ="Kingdom") %>% 
+  add_column(polymer_photo, .before ="Kingdom") %>% 
+  add_column(pol_photo_station, .before ="Kingdom")
+
+t3$polymer_station <-
+  if_else(t3$material == "wood",
+          str_c(t3$material, "_", t3$station),
+          t3$polymer_station)
+
+t3$polymer_photo <-
+  if_else(t3$material == "wood", str_c(t3$material), t3$polymer_photo)
+
+t3$pol_photo_station <-
+  if_else(t3$material == "wood",
+          str_c(t3$material, "_", t3$station),
+          t3$pol_photo_station)
+
 # write_csv(t3, "../tidyPE462_rel_abund_calc.csv")

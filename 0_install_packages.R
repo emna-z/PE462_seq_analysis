@@ -8,7 +8,7 @@ if (!require("BiocManager", quietly = TRUE))
 
 BiocManager::install("phyloseq")
 
-# miaverse ---------------------------------------------------------------------
+# miaverse ----------------------------------------------------------------
 BiocManager::install("mia")
 BiocManager::install("microbiome")
 
@@ -17,4 +17,20 @@ BiocManager::install("microbiome")
 install.packages("Hmisc")
 
 
+# GT suite ----------------------------------------------------------------
+
+install.packages("gt")
+install.packages("gtExtras")
+install.packages("gtsummary")
+
+# scales ------------------------------------------------------------------
+
+install.packages("scales")
+
+# plots and palettes ------------------------------------------------------
+
+install.packages("RColorBrewer")
+install.packages("ggthemes")
+install.packages("Polychrome")
+install.packages("ggpubr")
 

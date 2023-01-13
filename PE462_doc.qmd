@@ -1,5 +1,5 @@
 ---
-title: "PE462 Repot"
+title: "PE462 Report"
 author: "E. Zeghal"
 date: "`r Sys.Date()`"
 format: 
@@ -9,10 +9,12 @@ format:
     toc-location: left
     toc-float: true
     toc-depth: 5
-    code-fold: show
+    code-fold: show  
+    highlight-style: a11y-dark
 theme:
   light: flatly
   dark: darkly
+# mainfont: "Atkinson Hyperlegible"
 execute:
   warning: false
 editor: visual
@@ -26,7 +28,7 @@ The files used here are the resulting asv tables and taxonomy tables obtained vi
 
 The following sections describe the different steps and codes used during the analysis.
 
-### 1. Data import and cleaning {#sec-1.-data-import-and-cleaning}
+### Data import and cleaning {#sec-1.-data-import-and-cleaning}
 
 #### Import data for phyloseq
 
@@ -74,9 +76,6 @@ tax2 <- tax2 %>%
   mutate( across(.cols = everything(), ~str_replace_all(.,c("XXX"="","XX"="","_X"= "", "_" = " "))))
 # and add a Supergroup column to the prokaryotes column by duplicating the kingdom column content
 tax1 <- tax1 %>% mutate(Supergroup = Kingdom, .after = Kingdom)
-
-tax2 <- as.matrix(tax2)
-tax1 <- as.matrix(tax1)
 
 # combine into phyloseq tax_table()
 tax <- rbind(tax1,tax2) %>%
@@ -151,8 +150,9 @@ Before continuing with the pre-processing, let's calculate the 𝝰 diversity in
 ```{r}
 #| label: alpha diversity indexes
 
+alpha_tab <-microbiome::alpha(physeq_object, index = "all")
+
 a_div <- phyloseq::estimate_richness(physeq_object)
-print(a_div)
 ```
 
 Now we can proceed with the rest of the pre-processing.
@@ -171,6 +171,8 @@ physeq <- physeq_object %>%
 
 physeq
 ```
+
+#### Tidy table
 
 Now that the overall data set is "clean", we will produce a tidy table.
 
@@ -196,6 +198,8 @@ tidy_physeq_asv$polymer <- if_else(tidy_physeq_asv$material=="wood",
 tidy_physeq_asv$replicate <- NULL
 
 ```
+
+#### Relative abundances calculations {#sec-relative-abundances-calculations}
 
 ```{r}
 #| label: Relative abundances calculations
@@ -261,6 +265,33 @@ t3 <- tidy_physeq_asv  %>% group_by(Sample) %>% mutate(Sample_rel_abund = Abunda
   mutate(Species_rep_rel_abund = sum(rep_rel_abund)) %>%
   ungroup()  
 
+polymer_station <-  str_c(t3$polymer, "_", t3$station)
+polymer_photo <- str_c(t3$polymer, "_", t3$treatment)
+pol_photo_station <- str_c(t3$polymer, "_", t3$treatment, "_", t3$station)
+t3 <- t3 %>% 
+  add_column(polymer_station, .before ="Kingdom") %>% 
+  add_column(polymer_photo, .before ="Kingdom") %>% 
+  add_column(pol_photo_station, .before ="Kingdom")
+
+t3$polymer_station <-
+  if_else(t3$material == "wood",
+          str_c(t3$material, "_", t3$station),
+          t3$polymer_station)
+
+t3$polymer_photo <-
+  if_else(t3$material == "wood", str_c(t3$material), t3$polymer_photo)
+
+t3$pol_photo_station <-
+  if_else(t3$material == "wood",
+          str_c(t3$material, "_", t3$station),
+          t3$pol_photo_station)
+
 # write_csv(t3, "../tidyPE462_rel_abund_calc.csv")
 
+print(head(t3))
+
 ```
+
+### Taxonomic ranks composition
+
+The tidy table generated in @sec-relative-abundances-calculations was used to generate tables with the corresponding abundances for each of the following ranks Kingdom, Phylum, Class, Order, Family, Genus and Species using
