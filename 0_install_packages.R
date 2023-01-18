@@ -1,3 +1,10 @@
+##################################################
+## Project: PE462
+## Script purpose: install the packages necessary
+## for the analysis workflow
+## Date: 17-01-2023
+## Author: E. Zeghal
+##################################################
 
 # tidyverse ---------------------------------------------------------------
 install.packages("tidyverse")
@@ -20,9 +27,10 @@ BiocManager::install("microbiome")
 
 install.packages("Hmisc")
 
+# Tables ------------------------------------------------------------------
 
-# GT suite ----------------------------------------------------------------
-
+install.packages("kableExtra")
+install.packages("huxtable")
 install.packages("gt")
 install.packages("gtExtras")
 install.packages("gtsummary")
@@ -41,3 +49,6 @@ install.packages("ggpubr")
 install.packages("ggiraph")
 install.packages("plotly")
 devtools::install_github("david-barnett/microViz")
+install.packages("ggtext")
+install.packages("ggnewscale")
+install.packages("ggh4x")

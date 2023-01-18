@@ -114,7 +114,7 @@ physeq_object
 
 #### Data cleaning and alpha diversity
 
-The obtained data set still needs a bit of cleaning i.e. deleting singletons, deleting chloroplasts, eliminating poorly assigned ASVs, harmonize taxonomy, etc.
+The obtained dataset still needs a bit of cleaning i.e. deleting singletons, deleting chloroplasts, eliminating poorly assigned ASVs, harmonize taxonomy, etc.
 
 ```{r}
 #| label: cleaning_1
@@ -174,7 +174,7 @@ physeq
 
 #### Tidy table
 
-Now that the overall data set is "clean", we will produce a tidy table.
+Now that the overall dataset is "clean", we will produce a tidy table.
 
 ```{r}
 #| label: Tidy physeq
@@ -292,6 +292,45 @@ t3$pol_photo_station <-
 
 ```
 
+### Alpha diversity
+
+In ecology, alpha diversity (α-diversity) is the mean species diversity in a site at a local scale. Applying α-diversity metrics to amplicon sequencing data is subject to discussion [@willis2019]
+
+```{r}
+#| label: source alpha div plots
+#| results: hide
+#| message: false
+
+# Script to generate plots
+source("./4_alpha_div_plots.R")
+```
+
+#### Shannon diversity index
+
+-   Shannon's diversity index or Shannon entropy, is one of the popular diversity indices in the ecological literature. The idea of this metric is that it quantifies the uncertainty in predicting the species identity of an individual that is taken at random from the dataset [@theuse].
+
+-   It is calculated by the following equation: $H = −∑[ (pi) × ln(pi)]$
+
+```{r}
+#| label: shannon index plot
+#| echo: false
+
+shannon
+```
+
+#### Gini-Simpson diversity index
+
+-   It represents the probability that two randomly selected individuals will be of the same species. Since this probability decreases with increasing species richness, the Simpson index also decreases with richness, which is not too intuitive. For that reason, more meaningful is to use Gini-Simpson index, which is simply 1-Simpson index.
+
+-   It is calculated by the following equation: $1- \frac{\sum n_i(n_i-1)}{N(N - 1)}$
+
+```{r}
+#| label: simpson index plot
+#| echo: false
+
+simpson 
+```
+
 ### Taxonomic ranks composition
 
 The tidy table generated in @sec-relative-abundances-calculations was used to generate tables with the corresponding abundances for each of the following ranks Kingdom, Phylum, Class, Order, Family, Genus and Species using [2_split_by_ranks.R](https://github.com/emna-z/PE462_seq_analysis/blob/master/2_split_by_ranks.R).
@@ -306,12 +345,20 @@ source("./3_plots_div.R")
 
 ```
 
+#### Kingdom
+
+As expected, Bacteria is the most represented kingdom.
+
 ```{r}
 #| label: kingdom barplot
 #| echo: false
 
 king_plot 
 ```
+
+#### Phylum
+
+Clear switch from Proteobacteria and Campylobacteria dominance in early stages to appearance of Actinobacteria and Planctomycetota in later stages of colonization.
 
 ```{r}
 #| label: phyla barplot
@@ -320,35 +367,15 @@ king_plot
 phyla_plot 
 ```
 
+#### Order
+
+Campylobacterales and Enterobacterales proportion of reads decreased through time. Micrococcales, Planctomycetales and low abundance/unassigned proportion increased through time.
+
 ```{r}
 #| label: order barplot
 #| echo: false
 
 order_plot
-```
-
-```{r}
-#| label: source alpha div plots
-#| results: hide
-#| message: false
-
-# Script to generate plots
-source("./4_alpha_div_plots.R")
-
-```
-
-```{r}
-#| label: shannon index plot
-#| echo: false
-
-shannon
-```
-
-```{r}
-#| label: simpson index plot
-#| echo: false
-
-simpson 
 ```
 
 ### session info

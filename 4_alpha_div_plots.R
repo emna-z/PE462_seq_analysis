@@ -20,14 +20,14 @@ alpha_tab$polymer <- if_else(alpha_tab$material=="wood", str_c(alpha_tab$materia
 # Simpson eveness ---------------------------------------------------------
 
 
-ev_simp <- alpha_tab %>%
+div_simp <- alpha_tab %>%
   mutate_if(is.character, as.factor) %>% 
   select(detail, treatment, material,polymer,
-         timepoint_days ,station, evenness_simpson )%>% 
+         timepoint_days ,station, diversity_gini_simpson )%>% 
   group_by(treatment,polymer,station,timepoint_days) %>% 
-  summarise(mean=mean(evenness_simpson),
+  summarise(mean=mean(diversity_gini_simpson),
             n = n(),
-            sd=sd(evenness_simpson)) %>% 
+            sd=sd(diversity_gini_simpson)) %>% 
   mutate(station = recode(station,
                    "C05" = "open water station",
                    "C13" = "coastal station")) %>% 
@@ -58,7 +58,7 @@ div_shan <- alpha_tab %>%
 
 ## eveness simpson --------------------------------------------------------
 
-simpson <-ggplot(ev_simp,
+simpson <-ggplot(div_simp,
                  aes(x = reorder(timepoint_days, as.numeric(timepoint_days)), 
                      y = mean, color=treatment)) +
   geom_point(size = 3, position=position_dodge(width=0.5))+
@@ -70,15 +70,24 @@ simpson <-ggplot(ev_simp,
                      labels = c("no" = "none",
                                 "no_UV" = " not UV treated",
                                 "UV" = "UV treated")) +
-  theme_pubclean ()+
+  theme_minimal()+
   theme(strip.text.x = element_text(colour = "black", face = "bold", size = 12),
         strip.text.y = element_text(colour = "black", face = "bold", size = 10),
-        strip.background = element_rect(color = "lightgrey"),
+        strip.background = element_rect(color = NA),
+        axis.text.x = element_text(colour = "black", face = "bold"),
+        axis.text.y = element_text(colour = "black", face = "bold"),
+        axis.title.x = element_text(colour = "black", face = "bold"),
+        axis.title.y = element_text(colour = "black", face = "bold"),
+        panel.grid.major.x = element_blank(),
+        panel.grid.minor.x = element_blank(),
+        panel.grid.major.y =  element_line(colour = "grey80", linewidth = 0.08, linetype = "dotted"),
+        panel.grid.minor.y = element_blank(),
         legend.position = "top",
-        axis.text= element_text(face = "bold"))+
+        legend.title = element_text(face = "bold"),
+        legend.text = element_text(face = "bold"))+
   facet_grid(polymer ~ station)+
   labs(x="incubation time (days)", 
-       y = "Simpson eveness index")
+       y = "Gini-Simpson diversity index")
 # simpson
 
 
@@ -99,16 +108,25 @@ shannon <-ggplot(div_shan,
                      labels = c("no" = "none",
                                 "no_UV" = " not UV treated",
                                 "UV" = "UV treated")) +
-  theme_pubclean()+
+  theme_minimal()+
   theme(strip.text.x = element_text(colour = "black", face = "bold", size = 12),
         strip.text.y = element_text(colour = "black", face = "bold", size = 10),
-        strip.background = element_rect(color = "lightgrey"),
+        strip.background = element_rect(color = NA),
+        axis.text.x = element_text(colour = "black", face = "bold"),
+        axis.text.y = element_text(colour = "black", face = "bold"),
+        axis.title.x = element_text(colour = "black", face = "bold"),
+        axis.title.y = element_text(colour = "black", face = "bold"),
+        panel.grid.major.x = element_blank(),
+        panel.grid.minor.x = element_blank(),
+        panel.grid.major.y =  element_line(colour = "grey80", linewidth = 0.08, linetype = "dotted"),
+        panel.grid.minor.y = element_blank(),
         legend.position = "top",
-        axis.text= element_text(face = "bold"))+
+        legend.title = element_text(face = "bold"),
+        legend.text = element_text(face = "bold"))+
   facet_grid(polymer ~ station)+
   labs(x="incubation time (days)", 
        y = "Shannon diversity index")
-# shannon
+shannon
 
 # ggexport(shannon,filename = "./plots/shannon_index.pdf")
 

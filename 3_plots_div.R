@@ -71,7 +71,7 @@ p <- phyla %>% filter(station %in% c("C05","C13")) %>%
   filter(timepoint_days%nin% c("0")) %>% 
   select(-Kingdom) %>% 
   select(- st_dev_Phylum_abund) %>% 
-  mutate(station = str_replace_all(station,c("C05"= "open water station", "C13" = "Coastal station"))) %>% 
+  mutate(station = str_replace_all(station,c("C05"= "open water station", "C13" = "coastal station"))) %>% 
   mutate(polymer_photo = str_replace_all(polymer_photo,c("_"= " ")))%>% 
   mutate(across(c(polymer,polymer_photo,timepoint_days,station),factor)) %>% 
   mutate(Phylum, Phylum = if_else(Phyla_rep_rel_abund < 0.05, str_c("others <5%"), Phylum)) %>% 
@@ -119,7 +119,7 @@ o <- or %>% filter(station %in% c("C05","C13")) %>%
   filter(timepoint_days%nin% c("0")) %>%
   select(-Kingdom) %>% 
   select(-st_dev_Order_abund) %>% 
-  mutate(station = str_replace_all(station,c("C05"= "open water station", "C13" = "Coastal station"))) %>% 
+  mutate(station = str_replace_all(station,c("C05"= "open water station", "C13" = "coastal station"))) %>% 
   mutate(polymer_photo = str_replace_all(polymer_photo,c("_"= " ")))%>% 
   mutate(across(c(polymer,polymer_photo,timepoint_days,station),factor))%>%  
   mutate(Order, Order = if_else(Order_rep_rel_abund < 0.05, str_c("unassigned or <5%"), Order)) %>% 
@@ -153,7 +153,7 @@ p_o <- ggplot(of, aes(x=polymer_photo, y= Order_rep_rel_abund, fill=Order))+
         legend.text = element_text(face = "bold"),
         axis.title.y = element_text(face = "bold"),
         axis.text.x = element_text(face = "bold"))
-order_plot <- p_o + guides(fill=guide_legend(ncol =1))
+order_plot <- p_o + guides(fill=guide_legend(ncol =2))
 
 # ggpubr::ggexport(order_plot, "../orders.pdf")
 
