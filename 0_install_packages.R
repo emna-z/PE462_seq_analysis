@@ -14,14 +14,23 @@ install.packages("tidyverse")
 install.packages("devtools")
 
 # phyloseq ----------------------------------------------------------------
+
 if (!require("BiocManager", quietly = TRUE))
   install.packages("BiocManager")
 
 BiocManager::install("phyloseq")
 
-# miaverse ----------------------------------------------------------------
+# mia et al. --------------------------------------------------------------
+
 BiocManager::install("mia")
+BiocManager::install("miaViz")
 BiocManager::install("microbiome")
+
+# ordination --------------------------------------------------------------
+
+install.packages("FactoMineR")
+install.packages("factoextra")
+remotes::install_github("vmikk/metagMisc")
 
 # Hmisc -------------------------------------------------------------------
 
@@ -52,3 +61,9 @@ devtools::install_github("david-barnett/microViz")
 install.packages("ggtext")
 install.packages("ggnewscale")
 install.packages("ggh4x")
+
+
+# limma -------------------------------------------------------------------
+
+BiocManager::install("limma")
+

@@ -1,3 +1,10 @@
+##################################################
+## Project: PE462
+## Script purpose: Alpha diversity indexes plots
+## Date: 18-01-2023
+## Author: E. Zeghal
+##################################################
+
 library(tidyverse)
 library(Hmisc)
 library(ggpubr)
@@ -23,14 +30,15 @@ alpha_tab$polymer <- if_else(alpha_tab$material=="wood", str_c(alpha_tab$materia
 div_simp <- alpha_tab %>%
   mutate_if(is.character, as.factor) %>% 
   select(detail, treatment, material,polymer,
-         timepoint_days ,station, diversity_gini_simpson )%>% 
+         timepoint_days ,station, diversity_gini_simpson )%>%
+  mutate(polymer = fct_relevel(polymer, c("PE", "PS", "Nylon", "PET", "wood" ))) %>% 
   group_by(treatment,polymer,station,timepoint_days) %>% 
   summarise(mean=mean(diversity_gini_simpson),
             n = n(),
             sd=sd(diversity_gini_simpson)) %>% 
   mutate(station = recode(station,
-                   "C05" = "open water station",
-                   "C13" = "coastal station")) %>% 
+                          "C05"= "open NS water",
+                          "C13" = "coastal NS water")) %>% 
   mutate(timepoint_days=fct_relevel(timepoint_days, "5","10", "30", "45"))
             
 
@@ -41,14 +49,15 @@ div_simp <- alpha_tab %>%
 div_shan <- alpha_tab %>%
   mutate_if(is.character, as.factor) %>% 
   select(detail, treatment, material,polymer,
-         timepoint_days ,station, diversity_shannon )%>% 
+         timepoint_days ,station, diversity_shannon )%>%
+  mutate(polymer = fct_relevel(polymer, c("PE", "PS", "Nylon", "PET", "wood" ))) %>% 
   group_by(treatment,polymer,station,timepoint_days) %>% 
   summarise(mean=mean(diversity_shannon),
             n = n(),
             sd=sd(diversity_shannon)) %>% 
   mutate(station = recode(station,
-                          "C05" = "open water station",
-                          "C13" = "coastal station")) %>% 
+                          "C05"= "open NS water",
+                          "C13" = "coastal NS water")) %>% 
   mutate(timepoint_days=fct_relevel(timepoint_days, "5","10", "30", "45"))
 
 
@@ -56,7 +65,11 @@ div_shan <- alpha_tab %>%
 # display_carto_all(colorblind_friendly = TRUE)
 # rcartocolor::display_carto_pal(name = "Safe", n = 12)
 
-## eveness simpson --------------------------------------------------------
+my_comparisons <- list( c("5", "45"), c("5", "30"), c("10", "45") )
+
+
+
+# Gini-Simpson diversity index --------------------------------------------
 
 simpson <-ggplot(div_simp,
                  aes(x = reorder(timepoint_days, as.numeric(timepoint_days)), 
@@ -88,10 +101,10 @@ simpson <-ggplot(div_simp,
   facet_grid(polymer ~ station)+
   labs(x="incubation time (days)", 
        y = "Gini-Simpson diversity index")
-# simpson
+ simpson
 
 
-# ggexport(simpson,filename = "./plots/simpson_index.pdf")
+# ggexport(simpson,filename = "../simpson_index.pdf")
 
 ## Shannon diversity -----------------------------------------------------
 
@@ -126,7 +139,15 @@ shannon <-ggplot(div_shan,
   facet_grid(polymer ~ station)+
   labs(x="incubation time (days)", 
        y = "Shannon diversity index")
-shannon
+# shannon
 
-# ggexport(shannon,filename = "./plots/shannon_index.pdf")
+# ggexport(shannon,filename = "../shannon_index.pdf")
 
+
+# pdf of combined graphs --------------------------------------------------
+
+ # ggarrange(shannon + rremove("x.text") + rremove ("x.title"), 
+ #           simpson + rremove("legend") + rremove("legend.title"),  
+ #           labels = c("A)", "B)"),
+ #           nrow = 2)
+ 

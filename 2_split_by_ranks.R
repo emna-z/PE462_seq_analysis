@@ -1,3 +1,12 @@
+##################################################
+## Project: PE462
+## Script purpose: get separate tables with 
+## relative abundances for each taxonomic rank
+## Date: 10-01-2023
+## Author: E. Zeghal
+##################################################
+
+
 ######libraries#####
 library(tidyverse)
 library(Hmisc)
