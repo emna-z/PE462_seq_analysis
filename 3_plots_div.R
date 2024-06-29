@@ -44,6 +44,10 @@ kelly1 <-  c("#be0032", "#f3c300",   "#875692",   "#f38400" ,  "#a1caf1" ,   "#c
 # Kingdom -----------------------------------------------------------------
 
 k <- read_csv("../Kingdom_PE462.csv")
+
+
+## transform for barplot ---------------------------------------------------
+
 k <- k %>% 
   filter(station %in% c("C05","C13")) %>%
   filter(timepoint_days%nin% c("0")) %>% 
@@ -53,31 +57,37 @@ k <- k %>%
   distinct() 
 k %>% head()
 
+
+## transform for writing ---------------------------------------------------
+
 # k %>% 
 #   group_by(Kingdom) %>% 
 #   summarise(mean = round(mean(Kingdom_rep_rel_abund)*100, digits = 1), 
 #             stdev= round(sd(Kingdom_rep_rel_abund)*100, digits = 1))
 
 
-# kingdoms RA barplot
+## kingdoms RA barplot -----------------------------------------------------
+
 king_plot <- ggplot(k, aes(x=fct_relevel(polymer_photo, c("PE no UV", "PE UV", "PS no UV", "PS UV","Nylon no UV", "Nylon UV", "PET no UV", "PET UV", "wood")),
                            y= Kingdom_rep_rel_abund, fill=Kingdom))+
   geom_bar(stat="identity", position="stack") +
   scale_fill_manual(values=safe)+
   scale_y_continuous(labels=percent)+
   theme_minimal()+
+  theme(axis.text.x = element_text(angle = 90, vjust = 0.5, hjust=1)) +
   xlab("")+
   ylab("Relative Abundance")+
   facet_grid (fct_relevel(timepoint_days, c('5',"10", "30", "45"))~station)+
-  theme(axis.text.x = element_text(angle = 90, vjust = 0.5, hjust=1, face = "bold"),
-        axis.title.y = element_text(face = "bold") ,
-        strip.text.x = element_text(size=12, face="bold"),
-        strip.text.y = element_text(size=10, face="bold", angle = 0),
-        legend.title = element_text(face = "bold"),
-        legend.text = element_text(face = "bold"),
+  theme(strip.text.x = element_text(size = 14, face="bold"),
+        strip.text.y = element_text(size = 10, face="bold", angle = 0),
+        legend.title = element_text(size = 12, face = "bold"), 
+        legend.title.align = 0.4,
+        legend.text = element_text(size = 12, face = "bold"),
+        axis.title.y = element_text(face = "bold"),
+        axis.text.x = element_text(size = 11, face = "bold"),
         panel.grid.major = element_line(colour = NA),
         panel.grid.minor = element_line(colour = NA))
-
+king_plot
 # ggexport(king_plot,filename = "../kingdom_rel_abund_3.pdf")
 
 
@@ -101,26 +111,26 @@ phyla <- read_csv("../phyla_PE462.csv")
 # 
 # bact_phyla <- unique((phyla %>% filter(Kingdom == "Bacteria"))$Phylum)
 
-p2 <- phyla %>%
-  filter(station %in% c("C05","C13")) %>%
-  filter(timepoint_days%nin% c("0")) %>%
-  select(-Kingdom) %>%
-  select(-st_dev_Phylum_abund) %>%
-  mutate(station = str_replace_all(station,c("C05"= "open NS water", "C13" = "coastal NS water"))) %>%
-  mutate_if(is.character,as.factor) %>%
-  group_by(station, timepoint_days,polymer, Phylum) %>%
-  summarise(mean = round(mean(Phyla_rep_rel_abund)*100, digits = 1),
-            stdev= round(sd(Phyla_rep_rel_abund)*100, digits = 1))
-p3 <- phyla %>%
-  filter(station %in% c("C05","C13")) %>%
-  filter(timepoint_days%nin% c("0")) %>%
-  select(-Kingdom) %>%
-  select(-st_dev_Phylum_abund) %>%
-  mutate(station = str_replace_all(station,c("C05"= "open NS water", "C13" = "coastal NS water"))) %>%
-  mutate_if(is.character,as.factor) %>%
-  group_by( timepoint_days,polymer, Phylum) %>%
-  summarise(mean = round(mean(Phyla_rep_rel_abund)*100, digits = 1),
-            stdev= round(sd(Phyla_rep_rel_abund)*100, digits = 1))
+# p2 <- phyla %>%
+#   filter(station %in% c("C05","C13")) %>%
+#   filter(timepoint_days%nin% c("0")) %>%
+#   select(-Kingdom) %>%
+#   select(-st_dev_Phylum_abund) %>%
+#   mutate(station = str_replace_all(station,c("C05"= "open NS water", "C13" = "coastal NS water"))) %>%
+#   mutate_if(is.character,as.factor) %>%
+#   group_by(station, timepoint_days,polymer, Phylum) %>%
+#   summarise(mean = round(mean(Phyla_rep_rel_abund)*100, digits = 1),
+#             stdev= round(sd(Phyla_rep_rel_abund)*100, digits = 1))
+# p3 <- phyla %>%
+#   filter(station %in% c("C05","C13")) %>%
+#   filter(timepoint_days%nin% c("0")) %>%
+#   select(-Kingdom) %>%
+#   select(-st_dev_Phylum_abund) %>%
+#   mutate(station = str_replace_all(station,c("C05"= "open NS water", "C13" = "coastal NS water"))) %>%
+#   mutate_if(is.character,as.factor) %>%
+#   group_by( timepoint_days,polymer, Phylum) %>%
+#   summarise(mean = round(mean(Phyla_rep_rel_abund)*100, digits = 1),
+#             stdev= round(sd(Phyla_rep_rel_abund)*100, digits = 1))
 
 ## transform for barplot ---------------------------------------------------
 
@@ -128,52 +138,61 @@ p3 <- phyla %>%
 p <- phyla %>% 
   filter(station %in% c("C05","C13")) %>%
   filter(timepoint_days%nin% c("0")) %>%
-  mutate(Phylum, Phylum = if_else(Kingdom %nin% c("Bacteria"), str_c("others <5%"), Phylum)) %>% 
+  # filter(Phyla_rep_rel_abund>0) %>% Not really necessary
+  mutate(Phylum, Phylum = if_else(Kingdom %nin% c("Bacteria"), str_c("Others <5%"), Phylum)) %>% 
   select(-Kingdom) %>% 
   select(- st_dev_Phylum_abund) %>% 
   mutate(station = str_replace_all(station,c("C05"= "open NS water", "C13" = "coastal NS water"))) %>% 
+  mutate(polymer_photo = str_replace_all(polymer_photo,c("wood"= "Wood"))) %>% 
   mutate(polymer_photo = str_replace_all(polymer_photo,c("_"= " ")))%>% 
   mutate(across(c(polymer,polymer_photo,timepoint_days,station),factor)) %>% 
-  mutate(Phylum, Phylum = if_else(Phyla_rep_rel_abund < 0.05, str_c("others <5%"), Phylum)) %>% 
-  mutate(Phylum = fct_relevel(Phylum,"others <5%", after = Inf))
+  mutate(Phylum, Phylum = if_else(Phyla_rep_rel_abund < 0.05, str_c("Others <5%"), Phylum)) %>% 
+  mutate(Phylum = fct_relevel(Phylum,"Others <5%", after = Inf))
 
-# the multiple copies of phyla that are now labelled "others <5%" produce a distorted effect when plotting
-# to avoid that we'll sum the RA of all "others <5%" for each condition and replace the multiple 
+
+  
+# the multiple copies of phyla that are now labelled "Others <5%" produce a distorted effect when plotting
+# to avoid that we'll sum the RA of all "Others <5%" for each condition and replace the multiple 
 # entries by a single one
 
 psum <- p %>% 
-  filter(Phylum %in% "others <5%") %>%
+  filter(Phylum %in% "Others <5%") %>%
   group_by(detail) %>%
   mutate(Phyla_rep_rel_abund = sum(Phyla_rep_rel_abund)) %>%
-  distinct() #psum is the sum of RA of others <5% per condition
+  distinct() #psum is the sum of RA of Others <5% per condition
 
 p <- p %>% 
-  filter(Phylum %nin% "others <5%") %>%
-  bind_rows(psum) %>% # the multiple others <5% are now replaced by a single one per condition
-  mutate(Phylum = fct_relevel(Phylum,"others <5%", after = Inf)) 
+  filter(Phylum %nin% "Others <5%") %>%
+  bind_rows(psum) %>% # the multiple Others <5% are now replaced by a single one per condition
+  mutate(Phylum = fct_relevel(Phylum,"Others <5%", after = Inf)) 
 
 
-# phylum RA barplot
-phyla_plot <- ggplot(p, aes(x=fct_relevel(polymer_photo, c("PE no UV", "PE UV", "PS no UV", "PS UV","Nylon no UV", "Nylon UV", "PET no UV", "PET UV", "wood")),
+
+## phylum RA barplot -------------------------------------------------------
+
+
+phyla_plot <- ggplot(p, aes(x=fct_relevel(polymer_photo, c("PE no UV", "PE UV", "PS no UV", "PS UV","Nylon no UV", "Nylon UV", "PET no UV", "PET UV", "Wood")),
                                           y= Phyla_rep_rel_abund, fill=Phylum))+
   geom_bar(stat="identity", position="stack")+
   scale_fill_manual(values =  safe)+
   theme_minimal()+ 
   scale_y_continuous(labels=percent)+
   theme_minimal()+
+  theme(axis.text.x = element_text(angle = 90, vjust = 0.5, hjust=1)) +
   xlab("")+
   ylab("Relative Abundance")+
   facet_grid (fct_relevel(timepoint_days, c('5',"10", "30", "45"))~station)+
-  theme(axis.text.x = element_text(angle = 90, vjust = 0.5, hjust=1, face = "bold"),
-        axis.title.y = element_text(face = "bold") ,
-        strip.text.x = element_text(size=12, face="bold"),
-        strip.text.y = element_text(size=10, face="bold", angle = 0),
-        legend.title = element_text(face = "bold"),
+  theme(strip.text.x = element_text(size = 14, face="bold"),
+        strip.text.y = element_text(size = 10, face="bold", angle = 0),
+        legend.title = element_text(size = 12, face = "bold"), 
         legend.title.align = 0.4,
-        legend.text = element_text(face = "bold"),
+        legend.text = element_text(size = 12, face = "bold"),
+        axis.title.y = element_text(face = "bold"),
+        axis.text.x = element_text(size = 11, face = "bold"),
         panel.grid.major = element_line(colour = NA),
         panel.grid.minor = element_line(colour = NA))
 
+phyla_plot
 # ggexport(ph,filename = "../phylum_rel_abund.pdf")
 
 
@@ -184,30 +203,30 @@ or <- read_csv("../order_PE462.csv")
 
 ## transform for writing ---------------------------------------------------
 
-o1 <- or %>% 
-  filter(station %in% c("C05","C13")) %>%
-  filter(timepoint_days%nin% c("0")) %>%
-  select(-Kingdom) %>% 
-  select(-st_dev_Order_abund) %>% 
-  mutate(station = str_replace_all(station,c("C05"= "open NS water", "C13" = "coastal NS water"))) %>% 
-  mutate_if(is.character,as.factor) %>% 
-  group_by(station, timepoint_days, Order) %>% 
-  summarise(mean = round(mean(Order_rep_rel_abund)*100, digits = 1), 
-            stdev= round(sd(Order_rep_rel_abund)*100, digits = 1))
+# o1 <- or %>% 
+#   filter(station %in% c("C05","C13")) %>%
+#   filter(timepoint_days%nin% c("0")) %>%
+#   select(-Kingdom) %>% 
+#   select(-st_dev_Order_abund) %>% 
+#   mutate(station = str_replace_all(station,c("C05"= "open NS water", "C13" = "coastal NS water"))) %>% 
+#   mutate_if(is.character,as.factor) %>% 
+#   group_by(station, timepoint_days, Order) %>% 
+#   summarise(mean = round(mean(Order_rep_rel_abund)*100, digits = 1), 
+#             stdev= round(sd(Order_rep_rel_abund)*100, digits = 1))
+# 
+# o2 <- or %>% 
+#   filter(station %in% c("C05","C13")) %>%
+#   filter(timepoint_days%nin% c("0")) %>%
+#   select(-Kingdom) %>% 
+#   select(-st_dev_Order_abund) %>% 
+#   mutate(station = str_replace_all(station,c("C05"= "open NS water", "C13" = "coastal NS water"))) %>% 
+#   mutate_if(is.character,as.factor) %>% 
+#   group_by( timepoint_days, polymer,Order) %>% 
+#   summarise(mean = round(mean(Order_rep_rel_abund)*100, digits = 1), 
+#             stdev= round(sd(Order_rep_rel_abund)*100, digits = 1))
 
-o2 <- or %>% 
-  filter(station %in% c("C05","C13")) %>%
-  filter(timepoint_days%nin% c("0")) %>%
-  select(-Kingdom) %>% 
-  select(-st_dev_Order_abund) %>% 
-  mutate(station = str_replace_all(station,c("C05"= "open NS water", "C13" = "coastal NS water"))) %>% 
-  mutate_if(is.character,as.factor) %>% 
-  group_by( timepoint_days, polymer,Order) %>% 
-  summarise(mean = round(mean(Order_rep_rel_abund)*100, digits = 1), 
-            stdev= round(sd(Order_rep_rel_abund)*100, digits = 1))
 
 ## transform for barplots -------------------------------------------------
-
 
 o <- or %>% 
   filter(station %in% c("C05","C13")) %>%
@@ -215,41 +234,48 @@ o <- or %>%
   select(-Kingdom) %>% 
   select(-st_dev_Order_abund) %>% 
   mutate(station = str_replace_all(station,c("C05"= "open NS water", "C13" = "coastal NS water"))) %>% 
-  mutate(polymer_photo = str_replace_all(polymer_photo,c("_"= " ")))%>% 
+  mutate(polymer_photo = str_replace_all(polymer_photo,c("_"= " ", "wood"= "Wood")))%>% 
   mutate(across(c(polymer,polymer_photo,timepoint_days,station),factor))%>%  
-  mutate(Order, Order = if_else(Order_rep_rel_abund < 0.05, str_c("unassigned or <5%"), Order)) %>% 
-  mutate(Order, Order = if_else(Order == "unassigned", str_c("unassigned or <5%"), Order)) %>% 
+  mutate(Order, Order = if_else(Order_rep_rel_abund < 0.05, str_c("Unassigned or <5%"), Order)) %>% 
+  mutate(Order, Order = if_else(Order == "unassigned", str_c("Unassigned or <5%"), Order)) %>% 
   distinct()
 
-# Like phyla, the multiple copies of orders that are now labelled "unassigned or <5%" produce a 
+# Like phyla, the multiple copies of orders that are now labelled "Unassigned or <5%" produce a 
 # distorted effect when plotting to avoid that we'll sum the RA of all "others <5%" for each 
 # condition and replace the multiple entries by a single one
   
 o5 <- o %>% 
-  filter(Order %in% "unassigned or <5%") %>%
+  filter(Order %in% "Unassigned or <5%") %>%
   group_by(detail) %>% 
   mutate(Order_rep_rel_abund = sum(Order_rep_rel_abund)) %>%
   distinct()
   
-of <- o %>% filter(Order %nin% "unassigned or <5%") %>% 
+of <- o %>% filter(Order %nin% "Unassigned or <5%") %>% 
   bind_rows(o5) %>% 
-  mutate(Order = fct_relevel(Order,"unassigned or <5%", after = Inf)) %>% 
+  mutate(Order = fct_relevel(Order,"Unassigned or <5%", after = Inf)) %>% 
   distinct()
 
-# orders RA barplot
-p_o <- ggplot(of, aes(x=fct_relevel(polymer_photo, c("PE no UV", "PE UV", "PS no UV", "PS UV","Nylon no UV", "Nylon UV", "PET no UV", "PET UV", "wood")), 
-                      y= Order_rep_rel_abund, fill=Order))+
-  geom_bar(stat="identity", position="stack")+ scale_fill_manual(values = kelly1)+
-  scale_y_continuous(labels=percent)+
-  theme_minimal()+ theme(axis.text.x = element_text(angle = 90, vjust = 0.5, hjust=1))+
-  xlab("")+ylab("Relative Abundance")+
-  facet_grid (fct_relevel(timepoint_days, c('5',"10", "30", "45"))~station)+ 
-  theme(strip.text.x = element_text(size=12, face="bold"),strip.text.y = element_text(size=10, face="bold", angle = 0),
-        legend.title = element_text(face = "bold"), 
+## orders RA barplot -------------------------------------------------------
+
+
+p_o <- ggplot(of, aes(x=fct_relevel(polymer_photo, 
+                                    c("PE no UV", "PE UV", "PS no UV", "PS UV","Nylon no UV", "Nylon UV", "PET no UV", "PET UV", "Wood")), 
+                      y= Order_rep_rel_abund, fill=Order)) +
+  geom_bar(stat="identity", position="stack") +
+  scale_fill_manual(values = kelly1) +
+  scale_y_continuous(labels=percent) +
+  theme_minimal() + 
+  theme(axis.text.x = element_text(angle = 90, vjust = 0.5, hjust=1)) +
+  xlab("") +
+  ylab("Relative Abundance") +
+  facet_grid (fct_relevel(timepoint_days, c('5',"10", "30", "45"))~station) + 
+  theme(strip.text.x = element_text(size = 14, face="bold"),
+        strip.text.y = element_text(size = 10, face="bold", angle = 0),
+        legend.title = element_text(size = 12, face = "bold"), 
         legend.title.align = 0.4,
-        legend.text = element_text(face = "bold"),
+        legend.text = element_text(size = 12, face = "bold"),
         axis.title.y = element_text(face = "bold"),
-        axis.text.x = element_text(face = "bold"),
+        axis.text.x = element_text(size = 11, face = "bold"),
         panel.grid.major = element_line(colour = NA),
         panel.grid.minor = element_line(colour = NA))
 order_plot <- p_o + guides(fill=guide_legend(ncol =1))

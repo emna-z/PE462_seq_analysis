@@ -90,9 +90,10 @@ physeq_object <- physeq_object %>%
 
 # keep asv with abundance higher than 2 in at least 3 samples
 physeq <- physeq_object %>% 
-  filter_taxa( function(x) sum(x > 2) >= 3, TRUE) %>% 
   subset_samples(timepoint_days %nin% c("15")) %>% # Filter out timepoint 15 (incomplete) 
-  subset_taxa(!Phylum == "unassigned")
+  subset_taxa(!Phylum == "unassigned") %>% 
+  filter_taxa( function(x) sum(x > 2) >= 3, TRUE)
+  
 
 physeq
 

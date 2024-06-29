@@ -9,7 +9,6 @@
 
 # libraries ---------------------------------------------------------------
 
-# library("MicrobiomeStat")
 library("tidyverse")
 library("Hmisc")
 library("vegan")
@@ -18,9 +17,7 @@ library("scater")
 library("phyloseq")
 library("metagMisc")
 library("RColorBrewer")
-# library("finalfit")
-# library("kableExtra")
-# library("knitr")
+
 
 set.seed(42)
 
@@ -28,21 +25,26 @@ set.seed(42)
 
 # Load data ---------------------------------------------------------------
 
+# load the final phyloseq object from which the tidy table was created
+source("1_data_import.R")
 
-# source("1_data_import.R")
+#the tax_table, otu_table and sample_data from that object will be corrected in the same way the tidy table was
+
+## correct and load tax table ---------------------------------------------
+
 # tax_physeq <- as.data.frame(physeq@tax_table)
 # colnames(tax_physeq) <- colnames(physeq@tax_table@.Data)
-# tax_physeq$Species <- if_else(!tax_physeq$Species=="unassigned",
-#                               str_c(tax_physeq$Genus, " ", tax_physeq$Species), tax_physeq$Species)
+# tax_physeq$Species <- if_else(
+#   (!tax_physeq$Genus=="unassigned"&!tax_physeq$Species=="unassigned"),
+#   str_c(tax_physeq$Genus," ",tax_physeq$Species),
+#   str_c(tax_physeq$Genus," sp."))
 # write.csv(tax_physeq, "../tax_tab_physeq.csv")
-
-## make and load tax table ------------------------------------------------
 
 tax_pseq <- read.csv("../tax_tab_physeq.csv", row.names = 1) %>%
   as.matrix() %>%
   tax_table()
 
-## make and load asv table ------------------------------------------------
+## correct and load asv table ---------------------------------------------
 
 # asv_physeq <- as.data.frame(physeq@otu_table)
 # colnames(asv_physeq) <- colnames(physeq@otu_table@.Data)
@@ -50,7 +52,7 @@ tax_pseq <- read.csv("../tax_tab_physeq.csv", row.names = 1) %>%
 
 asv_pseq <- otu_table(as.matrix(read.csv("../asv_tab_physeq.csv", row.names = 1)), taxa_are_rows = T)
 
-## make and load sample data table ----------------------------------------
+## correct and load sample data table -------------------------------------
 
 # map <- read.csv("../mapfile_PE462_corrected_final.csv", na.strings = c("NA", ""))
 # map$detail <- if_else(map$material=="wood", str_c(map$material,"_",map$station,"_",map$timepoint_days), map$detail)
@@ -65,7 +67,7 @@ asv_pseq <- otu_table(as.matrix(read.csv("../asv_tab_physeq.csv", row.names = 1)
 # write_csv(map,"../map_from_tidy.csv")
 
 map <- read.csv("../map_from_tidy.csv",row.names = 1, na.strings = c("NA", ""), stringsAsFactors = T) %>% 
-  mutate(across(.cols = c("polymer_station","pol_photo_station"), 
+  mutate(across(.cols = c("polymer_station","pol_photo_station", "station" ), 
                 ~str_replace_all(.,c("C05"= "open NS water", "C13" = "coastal NS water", "_"= " "))))
 
 map_pseq <- sample_data(map)
@@ -79,8 +81,10 @@ pseq_neg <- pseq %>%
 
 pseq <- pseq %>% 
   subset_samples(timepoint_days %nin% c("15")) %>% 
-  subset_samples(station %in% c("C05","C13")) %>%
-  subset_samples(timepoint_days %nin% c("15","0"))
+  subset_samples(station %in% c("open NS water","coastal NS water")) %>%
+  subset_samples(timepoint_days %nin% c("15","0")) %>% 
+  subset_taxa(!Phylum == "unassigned") 
+
 pseq@sam_data$timepoint_days <- fct_relevel(pseq@sam_data$timepoint_days ,c("5", "10", "30", "45"))
 
 pseq_no_wood <-  pseq %>% 
@@ -99,22 +103,32 @@ p <-  plot_ordination (ps_clr, ordin, color = "polymer_station", shape = "timepo
 pal <- c("#6A3D9A", "#CAB2D6", "#FF7F00", "#FDBF6F", "#E31A1C",
                   "#FB9A99", "#33A02C", "#B2DF8A", "#1F78B4", "#A6CEE3")
 
-p+geom_point(size = 3)+
+p+geom_point(size = 5)+
+  stat_ellipse( aes(
+    group = interaction(pseq@sam_data$timepoint_days,pseq@sam_data$station), linetype = station),
+    type = "norm")+
   scale_shape(name="days")+
   scale_color_manual(name="polymer/station", values = pal)+
-  xlim(-5, 5)+
-  ylim(-5, 5)+
+  xlim(-5, 6.5)+
+  ylim(-6.5, 5)+
   theme_minimal()+
-  theme(strip.text.x = element_text(size=12, face="bold"),strip.text.y = element_text(size=12, face="bold"),
-        legend.title = element_text(face = "bold"),
-        legend.text = element_text(face = "bold"),
-        axis.title.y = element_text(face = "bold"),
-        axis.title.x = element_text(face = "bold"),
-        axis.text.y = element_text(face = "bold"),
-        axis.text.x = element_text(face = "bold"))+
+  ggtitle(label = "DIFFERENTIATION ACCORDING TO LOCATION AND TIME",
+          subtitle = "PCA - CLR transformed data - Aitchison distance") +
+  theme(title = element_text(size=19, face="bold"),
+        plot.subtitle = element_text(size = 15),
+        # strip.text.x = element_text(size=19, face="bold"),
+        # strip.text.y = element_text(size=19, face="bold"),
+        legend.title = element_text(face = "bold", size=21),
+        legend.text = element_text(face = "bold", size=19),
+        legend.position = "right",
+        axis.title.y = element_text(face = "bold", size=17),
+        axis.title.x = element_text(face = "bold", size=17),
+        axis.text.y = element_text(face = "bold", size = 16),
+        axis.text.x = element_text(face = "bold", size = 16))+
   guides(color = guide_legend(
     override.aes=list(shape = 18)))
-
+  
+ggsave("m", last_plot(), width = 12, height = 8, dpi = 300)
 
 # RCLR transform ----------------------------------------------------------
 

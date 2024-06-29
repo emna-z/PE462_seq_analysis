@@ -1,10 +1,12 @@
 ##################################################
 ## Project: PE462
-## Script purpose: heatmaps for genera
+## Script purpose: heatmaps for genera RA
 ## Date: 14-01-2023
 ## Author: E. Zeghal
 ##################################################
 
+
+# load libraries ----------------------------------------------------------
 
 library("tidyverse")
 library("Hmisc")
@@ -15,10 +17,6 @@ library("ggtext")
 library("glue")
 library("ggpubr")
 library("ggh4x")
-
-# k <- read_csv("../Kingdom_PE462.csv")
-# p <- read_csv("../phyla_PE462.csv")
-# o <-read_csv("../order_PE462.csv")
 
 
 # load genera table -------------------------------------------------------
@@ -100,7 +98,7 @@ wood0 <-  coast %>% filter(polymer %in% c("Glass_fiber")) %>%
 # join all duplicated t0 to original table
 coast2 <- coast %>% filter(polymer %nin% c("Glass_fiber")) %>%
   bind_rows (pe0, peuv0, pet0, petuv0, ps0, psuv0, nylon0, nylonuv0, wood0) %>% 
-  mutate(treatment = if_else(grepl( "no", treatment), "none", treatment)) %>% 
+  mutate(treatment = if_else(grepl( "no", treatment), "no UV", treatment)) %>% 
   mutate_if(is.character,as.factor) 
 
 
@@ -144,13 +142,13 @@ os2 <- os %>% filter(polymer %nin% c("Glass_fiber")) %>%
 # full and subsets data tibble --------------------------------------------
 
 full <- bind_rows(coast2, os2)
-plast <- full %>% filter(polymer %in% c("PE", "PS", "Nylon", "PET"))
-c_back <- full %>% filter(polymer %in% c("PE", "PS", "wood"))
-ha <- full %>% filter(polymer %in% c("Nylon", "PET", "wood"))
+plastics <- full %>% filter(polymer %in% c("PE", "PS", "Nylon", "PET"))
+#c_back <- full %>% filter(polymer %in% c("PE", "PS", "wood"))
+#ha <- full %>% filter(polymer %in% c("Nylon", "PET", "wood"))
 
 # heatmap platics only ----------------------------------------------------
 
-plast_h <- ggplot(data = plast, mapping = aes( x = fct_relevel(timepoint_days,  c("0","5", "10","30","45")),
+plastics_h <- ggplot(data = plastics, mapping = aes( x = fct_relevel(timepoint_days,  c("0","5", "10","30","45")),
                                               y = fct_relevel(Genus,rev), fill = Genus_rep_rel_abund)) +
   geom_tile() +
   scale_fill_gradientn(name = "relative abundance",colours =c("grey90","orange", "#380282") ,
@@ -163,15 +161,16 @@ plast_h <- ggplot(data = plast, mapping = aes( x = fct_relevel(timepoint_days,  
   theme(strip.placement = "outside",
         plot.title = element_text(hjust = 0.5),
         axis.title.y = element_blank(),
-        axis.text.y = element_text(face = "bold.italic", colour = condition),
-        axis.text.x = element_text(face = "bold"),
+        axis.text.y = element_text(size = 12, face = "bold.italic", colour = condition),
+        axis.text.x = element_text(size = 11, face = "bold", angle = 90, hjust = 1, vjust= 0.5),
+        axis.title.x = element_text(face = "bold", vjust= -1,hjust = 0.5 ),
         strip.background = element_blank(),
         ggh4x.facet.nestline = element_line(colour = c("#890100")),
-        strip.text.x = element_text(face = "bold"),
-        legend.title = element_text(face = "bold"),
+        strip.text.x = element_text(size= 12, face = "bold"),
+        legend.title = element_text(face = "bold", vjust = 0.85),
         legend.position="bottom") 
 
-# plast_h
+# plastics_h
 
 # ggexport(plast_h, "heatmap.pdf")
 # heatmap genera open water -----------------------------------------------
@@ -222,29 +221,3 @@ plast_h <- ggplot(data = plast, mapping = aes( x = fct_relevel(timepoint_days,  
 #           legend.position="right")
 
 # coast_h
-
-# all conditions top 4 tab ------------------------------------------------
-# 
-# top4_all <- bind_rows(os2,coast2) 
-# top4_h <- ggplot(data = top4_all, mapping = aes( x = fct_relevel(timepoint_days,  c("0","5", "10","30","45")),
-#                                                 y = fct_relevel(Genus,rev), fill = Genus_rep_rel_abund)) +
-#   
-#   geom_tile() +
-#   scale_fill_gradientn(name = "RA", colours = blu_grad, limits=c(0,0.75) )+ 
-#   facet_nested( ~ station+polymer+treatment, nest_line = element_line(linetype = 1, linewidth = 1)) +
-#   xlab(label = "incubation time (days)") +
-#   scale_y_discrete("Genus", breaks = breaks) +
-#   theme_minimal() +
-#   theme(strip.placement = "outside",
-#         plot.title = element_text(hjust = 0.5),
-#         axis.title.y = element_blank(),
-#         axis.text.y = element_text(face = "bold.italic", colour = condition),
-#         axis.text.x = element_text(face = "bold"),
-#         strip.background = element_blank(),
-#         ggh4x.facet.nestline = element_line(colour = c("#CC6677")),
-#         strip.text.x = element_text(face = "bold"),
-#         legend.title = element_text(face = "bold"),
-#         legend.position="top") 
-# 
-# top4_h
-
